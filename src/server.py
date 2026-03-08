@@ -36,15 +36,19 @@ register_export_tools(mcp)
 # Create Starlette app to serve both MCP and static output files
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+# Get the MCP ASGI app — mount at root since Starlette handles /mcp prefix
+mcp_app = mcp.http_app(path="/")
+
 app = Starlette(
     routes=[
         # Serve exported GLBs as static files
         Mount("/output", app=StaticFiles(directory=str(OUTPUT_DIR)), name="output"),
     ],
+    # Pass MCP lifespan to parent app (required by FastMCP)
+    lifespan=mcp_app.lifespan,
 )
 
 # Mount MCP at /mcp
-mcp_app = mcp.http_app(path="/")
 app.mount("/mcp", mcp_app)
 
 
