@@ -44,7 +44,7 @@ app = Starlette(
 )
 
 # Mount MCP at /mcp
-mcp_app = mcp.http_app(path="/mcp")
+mcp_app = mcp.http_app(path="/")
 app.mount("/mcp", mcp_app)
 
 
