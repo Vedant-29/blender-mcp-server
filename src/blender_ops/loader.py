@@ -60,10 +60,30 @@ bpy.ops.wm.save_mainfile(filepath={json.dumps(blend_path)})
 print("IMPORT_JSON:" + json.dumps(result))
 """
     from src.blender_ops.scene import _run_blender_with_file
-    output = _run_blender_with_file(blend_path, script)
+    import subprocess
+    import os
+
+    try:
+        # Run with full output capture (don't raise on non-zero)
+        blend_result = subprocess.run(
+            ["blender", "--background", blend_path, "--python-expr", script],
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        output = blend_result.stdout
+        stderr = blend_result.stderr
+
+        # Log everything for debugging
+        print(f"[import_glb] returncode: {blend_result.returncode}")
+        if stderr:
+            print(f"[import_glb] stderr (last 500 chars): {stderr[-500:]}")
+        if output:
+            print(f"[import_glb] stdout (last 500 chars): {output[-500:]}")
+    except Exception as e:
+        return {"error": f"Blender subprocess failed: {str(e)}"}
 
     # Clean up temp file
-    import os
     try:
         os.unlink(tmp_path)
     except OSError:
@@ -73,4 +93,9 @@ print("IMPORT_JSON:" + json.dumps(result))
         if line.startswith("IMPORT_JSON:"):
             return json.loads(line[len("IMPORT_JSON:"):])
 
-    return {"error": "Failed to parse import result"}
+    return {
+        "error": "Failed to parse import result",
+        "returncode": blend_result.returncode,
+        "stderr_tail": stderr[-300:] if stderr else "",
+        "stdout_tail": output[-300:] if output else "",
+    }
