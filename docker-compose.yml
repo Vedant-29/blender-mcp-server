@@ -1,0 +1,12 @@
+services:
+  blender-mcp:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./scenes:/app/scenes
+      - ./output:/app/output
+    environment:
+      - PORT=8080
+      - BASE_URL=http://localhost:8080
+    restart: unless-stopped
