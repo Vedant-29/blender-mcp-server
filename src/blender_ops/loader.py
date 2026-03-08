@@ -11,11 +11,21 @@ def import_glb(scene_id: str, model_url: str, object_name: str) -> dict:
     blend_path = str(get_scene_path(scene_id))
 
     # Download GLB to a temp file
-    with tempfile.NamedTemporaryFile(suffix=".glb", delete=False) as tmp:
-        tmp_path = tmp.name
-        response = httpx.get(model_url, follow_redirects=True, timeout=60.0)
-        response.raise_for_status()
-        tmp.write(response.content)
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".glb", delete=False) as tmp:
+            tmp_path = tmp.name
+            print(f"[import_glb] downloading from URL (length={len(model_url)}): {model_url[:150]}...")
+            response = httpx.get(model_url, follow_redirects=True, timeout=60.0)
+            if response.status_code != 200:
+                return {
+                    "error": f"Failed to download model: HTTP {response.status_code}",
+                    "url_preview": model_url[:200],
+                    "response_body": response.text[:300],
+                }
+            tmp.write(response.content)
+            print(f"[import_glb] downloaded {len(response.content)} bytes to {tmp_path}")
+    except Exception as e:
+        return {"error": f"Download failed: {type(e).__name__}: {str(e)}"}
 
     script = f"""
 import bpy
